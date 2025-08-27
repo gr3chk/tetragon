@@ -76,6 +76,14 @@ type config struct {
 	ExportRateLimit            int
 	ExportFilePerm             string
 
+	// UDP output options
+	UDPOutputEnabled bool
+	UDPOutputAddress string
+	UDPOutputPort    int
+
+	// gRPC options
+	GRPCEnabled bool
+
 	// Export aggregation options
 	EnableExportAggregation     bool
 	ExportAggregationWindowSize time.Duration

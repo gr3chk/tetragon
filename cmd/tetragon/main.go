@@ -491,6 +491,12 @@ func tetragonExecuteCtx(ctx context.Context, cancel context.CancelFunc, ready fu
 		}
 	}
 
+	if option.Config.UDPOutputEnabled {
+		if err = startUDPExporter(ctx, pm.Server); err != nil {
+			return err
+		}
+	}
+
 	if option.Config.HealthServerAddress != "" {
 		health.StartHealthServer(ctx, option.Config.HealthServerAddress, option.Config.HealthServerInterval)
 	}
@@ -734,6 +740,50 @@ func startExporter(ctx context.Context, server *server.Server) error {
 	log.Info("Starting JSON exporter", "logger", writer, "request", &req)
 	exporter := exporter.NewExporter(ctx, &req, server, encoder, writer, rateLimiter)
 	return exporter.Start()
+}
+
+func startUDPExporter(ctx context.Context, server *server.Server) error {
+	allowList, denyList, err := getExportFilters()
+	if err != nil {
+		return err
+	}
+	fieldFilters, err := getFieldFilters()
+	if err != nil {
+		return err
+	}
+
+	// Create UDP encoder
+	udpEncoder, err := encoder.NewUDPEncoder(option.Config.UDPOutputAddress, option.Config.UDPOutputPort)
+	if err != nil {
+		return fmt.Errorf("failed to create UDP encoder: %w", err)
+	}
+
+	var rateLimiter *ratelimit.RateLimiter
+	if option.Config.ExportRateLimit >= 0 {
+		rateLimiter = ratelimit.NewRateLimiter(ctx, 1*time.Minute, option.Config.ExportRateLimit, udpEncoder)
+	}
+
+	var aggregationOptions *tetragon.AggregationOptions
+	if option.Config.EnableExportAggregation {
+		aggregationOptions = &tetragon.AggregationOptions{
+			WindowSize:        durationpb.New(option.Config.ExportAggregationWindowSize),
+			ChannelBufferSize: option.Config.ExportAggregationBufferSize,
+		}
+	}
+
+	req := tetragon.GetEventsRequest{
+		AllowList:          allowList,
+		DenyList:           denyList,
+		AggregationOptions: aggregationOptions,
+		FieldFilters:       fieldFilters,
+	}
+
+	log.Info("Starting UDP exporter",
+		"address", fmt.Sprintf("%s:%d", option.Config.UDPOutputAddress, option.Config.UDPOutputPort),
+		"request", &req)
+
+	udpExporter := exporter.NewUDPExporter(ctx, &req, server, udpEncoder, rateLimiter)
+	return udpExporter.Start()
 }
 
 func Serve(ctx context.Context, listenAddr string, srv *server.Server) error {

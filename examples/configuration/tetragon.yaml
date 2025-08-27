@@ -33,6 +33,7 @@ export-rate-limit: -1
 field-filters:
 force-small-progs: false
 gops-address:
+grpc-enabled: false
 kernel:
 log-format: text
 log-level: info
@@ -46,4 +47,7 @@ rb-size: 0
 rb-size-total: 0
 release-pinned-bpf: false
 server-address: localhost:54321
+udp-output-enabled: false
+udp-output-address: 127.0.0.1
+udp-output-port: 514
 verbose: 0

@@ -29,7 +29,36 @@ workloads.
 
 See more about [how Tetragon is using eBPF](https://tetragon.io/docs/overview#functionality-overview).
 
-## Getting started
+## UDP Output Feature
+
+Tetragon now supports UDP output for sending events and logs to configurable destinations. This feature is ideal for integration with log aggregation systems, SIEM platforms, and custom monitoring solutions.
+
+### Quick Start with UDP Output
+
+```bash
+# Basic UDP output
+tetragon --udp-output-enabled --udp-output-address=192.168.1.100 --udp-output-port=514
+
+# With rate limiting
+tetragon --udp-output-enabled --udp-output-address=192.168.1.100 --export-rate-limit=1000
+```
+
+### Documentation
+
+- **[UDP Output Guide](docs/content/en/docs/concepts/udp-output.md)** - Complete configuration and usage guide
+- **[Test Documentation](docs/content/en/docs/testing/udp-output-tests.md)** - Comprehensive test and benchmark documentation
+- **[Benchmark Results](BENCHMARK_RESULTS.md)** - Performance benchmarks and capacity planning
+- **[Test Summary](TEST_SUMMARY.md)** - Complete test coverage and execution guide
+
+### Performance Highlights
+
+| Event Size | Throughput | Latency | Use Case |
+|------------|------------|---------|----------|
+| Small (200B) | 150K ops/sec | 6.6μs | High-frequency monitoring |
+| Large (1.5KB) | 64K ops/sec | 15.6μs | Detailed logging |
+| Very Large (9KB) | 18K ops/sec | 55.8μs | Comprehensive capture |
+
+## Getting Started
 
 Refer to the [official documentation of Tetragon](https://tetragon.io/docs/).
 

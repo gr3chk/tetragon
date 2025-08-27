@@ -1,0 +1,25 @@
+# UDP Output Configuration Example
+# This file demonstrates how to configure Tetragon to send events over UDP
+
+# Enable UDP output
+udp-output-enabled: true
+
+# UDP destination settings
+udp-output-address: "127.0.0.1"
+udp-output-port: 514
+
+# Disable gRPC when using UDP (optional)
+grpc-enabled: false
+
+# Export configuration
+export-rate-limit: 1000
+export-allowlist: "process_exec,process_exit,process_kprobe"
+export-denylist: ""
+
+# Logging configuration
+log-level: info
+log-format: text
+
+# Other Tetragon settings
+debug: false
+verbose: 0 

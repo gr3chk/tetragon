@@ -186,6 +186,13 @@ tetragon:
     enabled: true
     # -- The address at which to expose gRPC. Examples: localhost:54321, unix:///var/run/cilum/tetragon/tetragon.sock
     address: "localhost:54321"
+  udpOutput:
+    # -- Whether to enable UDP output for events and logs.
+    enabled: false
+    # -- The address to send UDP output to.
+    address: "127.0.0.1"
+    # -- The port to send UDP output to.
+    port: 514
   gops:
     # -- Whether to enable exposing gops server.
     enabled: true

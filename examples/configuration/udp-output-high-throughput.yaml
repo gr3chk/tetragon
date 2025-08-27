@@ -1,0 +1,30 @@
+# High-Throughput UDP Output Configuration
+# Optimized for maximum event throughput
+
+# Enable UDP output
+udp-output-enabled: true
+
+# UDP destination settings
+udp-output-address: "192.168.1.100"
+udp-output-port: 514
+
+# Disable gRPC for maximum performance
+grpc-enabled: false
+
+# High-throughput export settings
+export-rate-limit: 100000  # 100K events per minute
+export-allowlist: "process_exec,process_exit,process_kprobe,process_tracepoint"
+export-denylist: ""
+
+# Performance tuning
+event-queue-size: 50000
+process-cache-size: 131072
+data-cache-size: 2048
+
+# Logging configuration
+log-level: warn  # Reduce logging overhead
+log-format: text
+
+# Other settings
+debug: false
+verbose: 0 

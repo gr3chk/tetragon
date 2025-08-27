@@ -48,6 +48,18 @@ data:
 {{- else }}
   server-address: ""
 {{- end }}
+{{- if .Values.tetragon.udpOutput.enabled }}
+  udp-output-enabled: "true"
+  udp-output-address: {{ .Values.tetragon.udpOutput.address }}
+  udp-output-port: {{ .Values.tetragon.udpOutput.port | quote }}
+{{- else }}
+  udp-output-enabled: "false"
+{{- end }}
+{{- if .Values.tetragon.grpc.enabled }}
+  grpc-enabled: "true"
+{{- else }}
+  grpc-enabled: "false"
+{{- end }}
 {{- if .Values.tetragon.healthGrpc.enabled }}
   health-server-address: :{{ .Values.tetragon.healthGrpc.port }}
   health-server-interval: {{ .Values.tetragon.healthGrpc.interval | quote }}

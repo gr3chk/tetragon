@@ -77,6 +77,10 @@ const (
 
 	KeyFieldFilters     = "field-filters"
 	KeyRedactionFilters = "redaction-filters"
+	KeyUDPOutputEnabled = "udp-output-enabled"
+	KeyUDPOutputAddress = "udp-output-address"
+	KeyUDPOutputPort    = "udp-output-port"
+	KeyGRPCEnabled      = "grpc-enabled"
 
 	KeyNetnsDir = "netns-dir"
 
@@ -220,6 +224,24 @@ func ReadAndSetFlags() error {
 	Config.EnableExportAggregation = viper.GetBool(KeyEnableExportAggregation)
 	Config.ExportAggregationWindowSize = viper.GetDuration(KeyExportAggregationWindowSize)
 	Config.ExportAggregationBufferSize = viper.GetUint64(KeyExportAggregationBufferSize)
+
+	// UDP output configuration
+	Config.UDPOutputEnabled = viper.GetBool(KeyUDPOutputEnabled)
+	Config.UDPOutputAddress = viper.GetString(KeyUDPOutputAddress)
+	Config.UDPOutputPort = viper.GetInt(KeyUDPOutputPort)
+
+	// gRPC configuration
+	Config.GRPCEnabled = viper.GetBool(KeyGRPCEnabled)
+
+	// If UDP output is enabled, disable gRPC by default unless explicitly enabled
+	if Config.UDPOutputEnabled && !Config.GRPCEnabled {
+		Config.ServerAddress = ""
+	} else if Config.GRPCEnabled {
+		Config.ServerAddress = viper.GetString(KeyServerAddress)
+	} else {
+		// Default behavior: gRPC enabled if server address is provided
+		Config.ServerAddress = viper.GetString(KeyServerAddress)
+	}
 
 	Config.CpuProfile = viper.GetString(KeyCpuProfile)
 	Config.MemProfile = viper.GetString(KeyMemProfile)
@@ -374,6 +396,10 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.String(KeyMetricsServer, "", "Metrics server address (e.g. ':2112'). Disabled by default")
 	flags.String(KeyMetricsLabelFilter, "namespace,workload,pod,binary", "Comma-separated list of enabled metrics labels. Unknown labels will be ignored.")
 	flags.String(KeyServerAddress, "localhost:54321", "gRPC server address (e.g. 'localhost:54321' or 'unix:///var/run/tetragon/tetragon.sock'). An empty address disables the gRPC server")
+	flags.Bool(KeyGRPCEnabled, false, "Enable gRPC server. Disabled by default when UDP output is enabled")
+	flags.Bool(KeyUDPOutputEnabled, false, "Enable UDP output for events and logs")
+	flags.String(KeyUDPOutputAddress, "127.0.0.1", "UDP output destination address")
+	flags.Int(KeyUDPOutputPort, 514, "UDP output destination port")
 	flags.String(KeyGopsAddr, "", "gops server address (e.g. 'localhost:8118'). Disabled by default")
 	flags.Bool(KeyEnableProcessCred, false, "Enable process_cred events")
 	flags.Bool(KeyEnableProcessNs, false, "Enable namespace information in process_exec and process_kprobe events")
