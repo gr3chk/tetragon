@@ -89,9 +89,6 @@ options:
       default_value: "false"
       usage: |
         Enable namespace information in process_exec and process_kprobe events
-    - name: enable-sbom-plugin
-      default_value: "false"
-      usage: Enable SBOM plugin for software bill of materials scanning
     - name: enable-tracing-policy-crd
       default_value: "true"
       usage: |
@@ -229,18 +226,6 @@ options:
       default_value: "true"
       usage: |
         Release all pinned BPF programs and maps in Tetragon BPF directory. Enabled by default. Set to false to disable
-    - name: sbom-enable-docker
-      default_value: "true"
-      usage: Enable Docker container scanning in SBOM plugin
-    - name: sbom-enable-filesystem
-      default_value: "true"
-      usage: Enable filesystem scanning in SBOM plugin
-    - name: sbom-output-file
-      default_value: /var/log/tetragon/sbom.json
-      usage: Output file for SBOM scan results
-    - name: sbom-scan-interval
-      default_value: 1h0m0s
-      usage: Interval between SBOM scans
     - name: server-address
       default_value: localhost:54321
       usage: |
@@ -250,6 +235,9 @@ options:
     - name: tracing-policy-dir
       default_value: /etc/tetragon/tetragon.tp.d
       usage: Directory from where to load Tracing Policies
+    - name: udp-buffer-size
+      default_value: "65536"
+      usage: UDP socket buffer size in bytes (allows K/M/G suffix)
     - name: udp-output-address
       default_value: 127.0.0.1
       usage: UDP output destination address

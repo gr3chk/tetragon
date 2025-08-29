@@ -30,7 +30,7 @@ func TestNewUDPExporter(t *testing.T) {
 	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Create UDP encoder
-	udpEncoder, err := encoder.NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port)
+	udpEncoder, err := encoder.NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port, 65536)
 	require.NoError(t, err)
 	defer udpEncoder.Close()
 
@@ -58,7 +58,7 @@ func TestUDPExporter_Send(t *testing.T) {
 	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Create UDP encoder
-	udpEncoder, err := encoder.NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port)
+	udpEncoder, err := encoder.NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port, 65536)
 	require.NoError(t, err)
 	defer udpEncoder.Close()
 
@@ -110,7 +110,7 @@ func TestUDPExporter_WithRateLimit(t *testing.T) {
 	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Create UDP encoder
-	udpEncoder, err := encoder.NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port)
+	udpEncoder, err := encoder.NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port, 65536)
 	require.NoError(t, err)
 	defer udpEncoder.Close()
 
@@ -168,7 +168,7 @@ func TestUDPExporter_Close(t *testing.T) {
 	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Create UDP encoder
-	udpEncoder, err := encoder.NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port)
+	udpEncoder, err := encoder.NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port, 65536)
 	require.NoError(t, err)
 
 	// Create a mock server

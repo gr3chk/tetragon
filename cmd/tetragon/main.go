@@ -69,6 +69,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/cilium/tetragon/pkg/k8s/apis/cilium.io/v1alpha1"
+	"golang.org/x/sys/unix"
 )
 
 var (
@@ -198,11 +199,53 @@ func logMetadata() {
 		hostname = "unknown"
 	}
 
+	// Get build information
+	buildInfo := version.ReadBuildInfo()
+
+	// Get kernel version
+	kernelVersion := "unknown"
+	var uname unix.Utsname
+	if err := unix.Uname(&uname); err == nil {
+		kernelVersion = unix.ByteSliceToString(uname.Release[:])
+	}
+
+	// Get UDP destination info
+	udpDestination := "disabled"
+	if option.Config.UDPOutputEnabled {
+		udpDestination = fmt.Sprintf("%s:%d", option.Config.UDPOutputAddress, option.Config.UDPOutputPort)
+	}
+
 	log.Info("Tetragon agent metadata",
-		"version", version.Version,
+		"@timestamp", time.Now().UTC().Format(time.RFC3339),
+		"event", "agent_init",
+		"tetragon_version", version.Version,
+		"build_commit", buildInfo.Commit,
+		"build_date", buildInfo.Time,
 		"hostname", hostname,
-		"platform", runtime.GOOS+"/"+runtime.GOARCH,
-		"go_version", runtime.Version())
+		"os", runtime.GOOS,
+		"kernel_version", kernelVersion,
+		"pid", os.Getpid(),
+		"udp_destination", udpDestination,
+		"udp_buffer_size", option.Config.UDPBufferSize,
+		"uptime", "initialized at 0")
+}
+
+// logShutdown logs the final shutdown information
+func logShutdown(startTime time.Time) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
+	uptime := time.Since(startTime)
+
+	log.Info("Tetragon agent shutdown",
+		"@timestamp", time.Now().UTC().Format(time.RFC3339),
+		"event", "agent_shutdown",
+		"hostname", hostname,
+		"tetragon_version", version.Version,
+		"uptime", uptime.String(),
+		"logs_flushed", "completed")
 }
 
 func loadInitialSensor(ctx context.Context) error {
@@ -224,6 +267,9 @@ func tetragonExecute() error {
 func tetragonExecuteCtx(ctx context.Context, cancel context.CancelFunc, ready func()) error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	// Record start time for uptime calculation
+	startTime := time.Now()
 
 	// Logging should always be bootstrapped first. Do not add any code above this!
 	if err := logger.SetupLogging(option.Config.LogOpts, option.Config.Debug); err != nil {
@@ -271,7 +317,10 @@ func tetragonExecuteCtx(ctx context.Context, cancel context.CancelFunc, ready fu
 		// to unpredictable behavior.
 		return fmt.Errorf("failed to create pid file '%s', another Tetragon instance seems to be up and running: %w", defaults.DefaultPidFile, err)
 	}
-	defer pidfile.Delete()
+	defer func() {
+		pidfile.Delete()
+		logShutdown(startTime)
+	}()
 
 	log.Info("Tetragon pid file creation succeeded", "pid", pid, "pidfile", defaults.DefaultPidFile)
 
@@ -802,7 +851,25 @@ func startUDPExporter(ctx context.Context, server *server.Server) error {
 		"request", &req)
 
 	udpExporter := exporter.NewUDPExporter(ctx, &req, server, udpEncoder, rateLimiter)
-	return udpExporter.Start()
+
+	// Start the UDP exporter
+	if err := udpExporter.Start(); err != nil {
+		return err
+	}
+
+	// Send metadata event over UDP after exporter is started
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
+	udpDestination := fmt.Sprintf("%s:%d", option.Config.UDPOutputAddress, option.Config.UDPOutputPort)
+	if err := udpExporter.SendMetadataEvent(hostname, udpDestination, option.Config.UDPBufferSize); err != nil {
+		log.Warn("Failed to send metadata event over UDP", logfields.Error, err)
+		// Don't fail startup if metadata export fails
+	}
+
+	return nil
 }
 
 func Serve(ctx context.Context, listenAddr string, srv *server.Server) error {

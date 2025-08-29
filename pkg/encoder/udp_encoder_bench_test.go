@@ -26,7 +26,7 @@ func BenchmarkUDPEncoder_Encode(b *testing.B) {
 	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Create UDP encoder
-	encoder, err := NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port)
+	encoder, err := NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port, 65536)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func BenchmarkUDPEncoder_EncodeLargeEvent(b *testing.B) {
 	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Create UDP encoder
-	encoder, err := NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port)
+	encoder, err := NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port, 65536)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func BenchmarkUDPEncoder_EncodeVeryLargeEvent(b *testing.B) {
 	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Create UDP encoder
-	encoder, err := NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port)
+	encoder, err := NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port, 65536)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func BenchmarkUDPEncoder_Write(b *testing.B) {
 	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Create UDP encoder
-	encoder, err := NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port)
+	encoder, err := NewUDPEncoder(serverAddr.IP.String(), serverAddr.Port, 65536)
 	if err != nil {
 		b.Fatal(err)
 	}

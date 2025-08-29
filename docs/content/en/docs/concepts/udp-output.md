@@ -1,11 +1,29 @@
 ---
 title: "UDP Output"
-description: "Configure Tetragon to send events and logs over UDP"
+description: "Configure Tetragon to send events and logs over UDP using fire-and-forget packet transmission"
 ---
 
 # UDP Output
 
-Tetragon can send events and logs over UDP to a configurable destination. This feature is useful for integrating with log aggregation systems, SIEM platforms, or custom monitoring solutions that accept UDP input.
+Tetragon can send events and logs over UDP to a configurable destination using **fire-and-forget packet transmission**. This feature is useful for integrating with log aggregation systems, SIEM platforms, or custom monitoring solutions that accept UDP input.
+
+## Key Features
+
+- **No listener required** - UDP packets are sent even if the destination port is closed or unreachable
+- **Fire-and-forget** - True connectionless UDP transmission using WriteToUDP
+- **High performance** - Efficient packet transmission without connection overhead
+- **Network resilient** - Survives network interruptions and destination unavailability
+- **Metadata export** - Automatically exports agent initialization metadata on startup
+
+## How It Works
+
+Tetragon uses unbound UDP sockets with `WriteToUDP()` to send packets directly to the destination address and port. This approach:
+
+- **Eliminates connection requirements** - No need for a listener on the destination
+- **Provides true UDP behavior** - Packets are transmitted regardless of destination state
+- **Improves reliability** - No connection establishment failures or "connection refused" errors
+- **Enables packet dumping** - Perfect for scenarios where you want to send logs even without a service listening
+- **Minimal operation mode** - Automatically disables unnecessary services (health server, gRPC, metrics, etc.) when UDP output is enabled 
 
 ## Configuration
 
@@ -55,7 +73,7 @@ tetragon:
 
 ## Event Format
 
-Events are sent as JSON over UDP, with each event on a separate line. The format is identical to the JSON export format used by the file exporter.
+Events are sent as JSON over UDP, with each event on a separate line. The format is identical to the JSON export format used by other exporters.
 
 Example event:
 ```json
@@ -70,122 +88,112 @@ Example event:
     }
   }
 }
-```
+``` 
 
-## Features
+## Technical Implementation
 
-### Rate Limiting
+### WriteToUDP Architecture
 
-UDP output supports the same rate limiting as other exporters. Use the `--export-rate-limit` option to control the number of events per minute:
+Tetragon's UDP output uses unbound UDP sockets with `WriteToUDP()` for optimal performance:
 
-```bash
-tetragon --udp-output-enabled --udp-output-address=192.168.1.100 --export-rate-limit=1000
-```
+- **Unbound Sockets**: Created with `net.ListenUDP("udp", ":0")` for maximum flexibility
+- **Direct Packet Transmission**: Uses `conn.WriteToUDP(data, destAddr)` for fire-and-forget sending
+- **Connection Pooling**: Efficient reuse of UDP sockets for better performance
+- **No Connection State**: Eliminates connection establishment failures
 
-### Filtering
+### Socket Management
 
-UDP output supports the same filtering options as other exporters:
-
-- `--export-allowlist`: Only export events matching the allowlist
-- `--export-denylist`: Exclude events matching the denylist
-- `--field-filters`: Filter specific fields from events
-
-### Aggregation
-
-UDP output supports event aggregation when enabled with `--enable-export-aggregation`.
-
-## UDP Buffer Size Tuning
-
-The UDP buffer size configuration allows you to optimize UDP performance for different network environments and event volumes.
-
-### Buffer Size Recommendations
-
-| Use Case | Buffer Size | Description |
-|----------|-------------|-------------|
-| **Low Volume** | 32KB (32768) | < 1K events/sec, local network |
-| **Medium Volume** | 64KB (65536) | 1K-10K events/sec, default setting |
-| **High Volume** | 128KB (131072) | 10K-50K events/sec, high-bandwidth |
-| **Very High Volume** | 256KB (262144) | 50K+ events/sec, dedicated network |
-| **Maximum** | 1MB (1048576) | Extreme throughput, jumbo frames |
-
-### Size Suffixes
-
-The buffer size supports K, M, and G suffixes for convenience:
-
-```bash
---udp-buffer-size=64K    # 64KB
---udp-buffer-size=1M     # 1MB
---udp-buffer-size=2G     # 2GB
-```
-
-### Performance Impact
-
-- **Smaller Buffers**: Lower memory usage, may cause packet drops under high load
-- **Larger Buffers**: Higher memory usage, better performance under high load
-- **Optimal Sizing**: Balance between memory usage and performance requirements
-
-## Connectionless UDP Architecture
-
-Tetragon's UDP output uses a truly connectionless architecture for maximum reliability and performance.
-
-### How It Works
-
-- **No Persistent Connections**: Each event uses a new UDP connection
-- **Fire-and-Forget**: Events are sent without waiting for acknowledgment
-- **Connection Pooling**: Efficient reuse of UDP connections for performance
-- **Automatic Cleanup**: Connections are automatically closed after use
-
-### Benefits
-
-- **Better Reliability**: No connection state to maintain or fail
-- **Improved Performance**: Connection pooling reduces overhead
-- **Network Resilience**: Survives network interruptions better
-- **Simplified Architecture**: No connection management complexity
-
-### Performance Characteristics
-
-- **Latency**: Minimal overhead for connection creation
-- **Throughput**: Optimized for high-volume event streaming
-- **Resource Usage**: Efficient memory and CPU utilization
-- **Scalability**: Better performance under high load
-
-## Integration Examples
-
-### Syslog Server
-
-Send events to a syslog server:
-
-```bash
-tetragon --udp-output-enabled --udp-output-address=syslog.example.com --udp-output-port=514
-```
-
-### Log Aggregator
-
-Send events to a log aggregation system like Fluentd:
-
-```bash
-tetragon --udp-output-enabled --udp-output-address=fluentd.example.com --udp-output-port=12201
-```
-
-### Custom Monitoring
-
-Send events to a custom monitoring application:
-
-```bash
-tetragon --udp-output-enabled --udp-output-address=monitoring.example.com --udp-output-port=9000
-```
+- **Socket Pool**: Maintains a pool of reusable UDP sockets
+- **Automatic Fallback**: Creates new sockets when pool is empty
+- **Buffer Optimization**: Configurable socket buffer sizes for performance tuning
+- **Resource Cleanup**: Automatic socket cleanup and memory management
 
 ## Performance Considerations
 
-- UDP output is fire-and-forget - no acknowledgment is expected
-- Events may be lost if the network is congested or the destination is unreachable
-- Consider using rate limiting for high-volume deployments
-- Monitor network bandwidth usage when sending to remote destinations
-- UDP buffer size tuning can significantly improve performance in high-throughput scenarios
-- Connection pooling provides 15-25% throughput improvement
-- Memory usage is optimized through efficient connection management
+- **Fire-and-forget**: No acknowledgment expected, maximum throughput
+- **Network Resilience**: Packets sent regardless of destination availability
+- **Buffer Tuning**: UDP buffer size significantly impacts performance
+- **Rate Limiting**: Use `--export-rate-limit` for high-volume deployments
+- **Memory Usage**: Efficient connection pooling minimizes resource overhead
+
+## Use Cases
+
+### Packet Dumping (No Listener Required)
+
+Perfect for scenarios where you want to send logs even without a service listening:
+
+```bash
+# Send logs to port 514 even if no syslog server is running
+tetragon --udp-output-enabled --udp-output-address=127.0.0.1 --udp-output-port=514
+```
+
+### Network Monitoring
+
+Send events to network monitoring tools or packet analyzers:
+
+```bash
+# Send to network monitoring system
+tetragon --udp-output-enabled --udp-output-address=monitor.example.com --udp-output-port=9000
+```
+
+### Log Aggregation
+
+Integrate with log aggregation systems:
+
+```bash
+# Send to Fluentd
+tetragon --udp-output-enabled --udp-output-address=fluentd.example.com --udp-output-port=12201
+```
+
+### Agent Metadata Export
+
+On startup, Tetragon automatically exports a metadata event containing:
+
+- **@timestamp**: ISO 8601 UTC timestamp of agent startup
+- **event**: "agent_init" identifier
+- **tetragon_version**: Current Tetragon version
+- **build_commit**: Git commit hash (if available)
+- **build_date**: Build timestamp (if available)
+- **hostname**: System hostname
+- **os**: Operating system identifier
+- **kernel_version**: Linux kernel version
+- **pid**: Process ID of the running agent
+- **udp_destination**: Configured UDP destination (host:port)
+- **udp_buffer_size**: Configured UDP buffer size
+- **uptime**: Initialized at 0
+
+This metadata event is sent as the first UDP packet, providing essential context for all subsequent events.
+
+### Minimal Operation Mode
+
+When UDP output is enabled, Tetragon automatically enters minimal operation mode:
+
+- **Health server disabled**: Port 6789 automatically closed
+- **gRPC server disabled**: Port 54321 automatically closed (unless explicitly enabled)
+- **Gops server disabled**: Port 8118 automatically closed
+- **Metrics server disabled**: Port 2112 automatically closed
+- **Other services disabled**: Kubernetes API, policy filtering, CRI, etc.
+
+This creates a focused deployment with minimal attack surface and maximum performance for UDP export scenarios:
+
+```bash
+# Minimal mode - only UDP export active
+tetragon --udp-output-enabled --udp-output-address=127.0.0.1 --udp-output-port=514
+
+# Minimal mode with custom health server
+tetragon --udp-output-enabled --udp-output-address=127.0.0.1 --udp-output-port=514 --health-server-address=:9999
+```
 
 ## Troubleshooting
+
+### No More "Connection Refused" Errors
+
+With the new WriteToUDP approach, you should no longer see connection-related errors. UDP packets will be sent successfully even when:
+
+- Destination port is closed
+- No service is listening
+- Network is unreachable
+- Firewall blocks traffic
 
 ### Check UDP Output Status
 
@@ -195,12 +203,13 @@ Look for UDP exporter startup messages in the Tetragon logs:
 Starting UDP exporter address=192.168.1.100:514
 ```
 
-### Verify Network Connectivity
+### Verify Packet Transmission
 
-Test UDP connectivity to the destination:
+Use network monitoring tools to verify UDP packets are being sent:
 
 ```bash
-echo '{"test": "message"}' | nc -u 192.168.1.100 514
+# Monitor UDP traffic to destination
+sudo tcpdump -i any udp and host 192.168.1.100 and port 514
 ```
 
 ### Monitor Metrics

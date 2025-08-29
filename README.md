@@ -58,6 +58,46 @@ tetragon --udp-output-enabled --udp-output-address=192.168.1.100 --export-rate-l
 | Large (1.5KB) | 64K ops/sec | 15.6μs | Detailed logging |
 | Very Large (9KB) | 18K ops/sec | 55.8μs | Comprehensive capture |
 
+## UDP Minimal Mode
+
+Tetragon now supports a **UDP Minimal Mode** that automatically disables all unnecessary services when UDP output is enabled. This creates a truly minimal deployment focused solely on event generation and UDP export.
+
+### What Gets Automatically Disabled
+
+- **Health Server** (Port 6789) - No health check endpoints
+- **gRPC Server** (Port 54321) - No API server (unless explicitly enabled)
+- **Gops Server** (Port 8118) - No debugging server
+- **Metrics Server** (Port 2112) - No metrics collection
+- **Pprof Server** (Port 6060) - No profiling server
+- **Kubernetes API Access** - No pod association
+- **Policy Filtering** - No policy management
+- **Other Services** - CRI, pod info, tracing policy CRD, etc.
+
+### Usage
+
+```bash
+# Basic minimal mode - only UDP export active
+tetragon --udp-output-enabled --udp-output-address=127.0.0.1 --udp-output-port=514
+
+# Minimal mode with custom health server
+tetragon --udp-output-enabled --udp-output-address=127.0.0.1 --udp-output-port=514 --health-server-address=:9999
+
+# Minimal mode with gRPC enabled
+tetragon --udp-output-enabled --udp-output-address=127.0.0.1 --udp-output-port=514 --grpc-enabled
+```
+
+### Benefits
+
+- **🔒 Security**: Minimal attack surface, only necessary UDP port open
+- **⚡ Performance**: All resources focused on event generation and export
+- **🚀 Production Ready**: Perfect for firewall-friendly deployments
+- **📊 Simple Monitoring**: Single UDP stream to monitor
+
+**Agent Metadata Export:**
+On startup, Tetragon automatically exports initialization metadata over UDP, including version, hostname, kernel version, and configuration details. This provides essential context for all subsequent events.
+
+For more details, see [UDP Output Documentation](docs/content/en/docs/concepts/udp-output.md), [UDP Minimal Mode Guide](docs/agent_changelog/UDP_MINIMAL_MODE.md), and [Agent Metadata Export Guide](docs/agent_changelog/AGENT_METADATA_EXPORT.md).
+
 ## Getting Started
 
 Refer to the [official documentation of Tetragon](https://tetragon.io/docs/).

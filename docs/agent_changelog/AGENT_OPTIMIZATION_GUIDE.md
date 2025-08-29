@@ -2,58 +2,78 @@
 
 ## Overview
 
-This guide covers the recent optimizations and enhancements made to the Tetragon agent, focusing on performance improvements, UDP output enhancements, and the removal of deprecated functionality.
+This document provides a comprehensive guide to the optimizations and improvements made to the Tetragon agent, focusing on performance, reliability, and operational excellence.
 
 ## 🚀 New Features
 
-### 1. Metadata Logging
+### 1. Enhanced Metadata Logging
 
-The agent now provides comprehensive metadata logging at startup, making it easier to identify and monitor Tetragon instances.
+The agent now provides comprehensive metadata logging at startup for better observability and monitoring.
 
 #### What Gets Logged
-- **Tetragon Version**: The exact version of the agent
-- **Hostname**: The hostname of the system running the agent
-- **Platform**: Operating system and architecture (e.g., linux/amd64)
-- **Go Version**: The Go runtime version used to compile the agent
+- **@timestamp**: ISO 8601 UTC timestamp
+- **event**: "agent_init" for startup
+- **tetragon_version**: Current Tetragon version
+- **build_commit**: Git commit hash
+- **build_date**: Build timestamp
+- **hostname**: System hostname
+- **os**: Operating system (e.g., linux)
+- **kernel_version**: Kernel version
+- **pid**: Process ID
+- **udp_destination**: UDP output destination (host:port)
+- **udp_buffer_size**: Configured UDP buffer size
+- **uptime**: "initialized at 0"
 
 #### Example Output
+```json
+{
+  "@timestamp": "2024-01-15T10:30:00Z",
+  "event": "agent_init",
+  "tetragon_version": "v1.1.0",
+  "build_commit": "abc123def456",
+  "build_date": "2024-01-15T10:00:00Z",
+  "hostname": "tetragon-node-1",
+  "os": "linux",
+  "kernel_version": "6.14.0-28-generic",
+  "pid": 12345,
+  "udp_destination": "192.168.1.100:514",
+  "udp_buffer_size": 65536,
+  "uptime": "initialized at 0"
+}
 ```
-INFO Tetragon agent metadata version=v1.2.0 hostname=prod-server-01 platform=linux/amd64 go_version=go1.21.0
+
+### 2. Graceful Shutdown Logging
+
+The agent now logs comprehensive shutdown information when terminating gracefully.
+
+#### What Gets Logged
+- **@timestamp**: ISO 8601 UTC timestamp
+- **event**: "agent_shutdown" for shutdown
+- **hostname**: System hostname
+- **tetragon_version**: Current Tetragon version
+- **uptime**: Total runtime duration
+- **logs_flushed**: "completed" indicating successful cleanup
+
+#### Example Output
+```json
+{
+  "@timestamp": "2024-01-15T18:45:00Z",
+  "event": "agent_shutdown",
+  "hostname": "tetragon-node-1",
+  "tetragon_version": "v1.1.0",
+  "uptime": "8h15m0s",
+  "logs_flushed": "completed"
+}
 ```
 
-#### Benefits
-- **Easier Monitoring**: Quickly identify agent versions across deployments
-- **Debugging**: Clear identification of which host is generating events
-- **Compliance**: Track agent versions for security and audit purposes
-- **Troubleshooting**: Platform information helps with platform-specific issues
+### 3. UDP Buffer Size Configuration
 
-### 2. UDP Buffer Size Configuration
-
-New configuration option to tune UDP socket buffer sizes for optimal performance in different network environments.
+The UDP sender now supports configurable buffer sizes for optimal network performance.
 
 #### Configuration Options
-
-**Command Line**
-```bash
-tetragon --udp-output-enabled \
-         --udp-output-address=192.168.1.100 \
-         --udp-output-port=514 \
-         --udp-buffer-size=131072
-```
-
-**Configuration File**
-```yaml
-udp-output-enabled: true
-udp-output-address: "192.168.1.100"
-udp-output-port: 514
-udp-buffer-size: 131072  # 128KB
-```
-
-**Environment Variable**
-```bash
-export TETRAGON_UDP_BUFFER_SIZE=131072
-tetragon --udp-output-enabled
-```
+- **Command Line**: `--udp-buffer-size=65536`
+- **Configuration File**: `udp-buffer-size: 65536`
+- **Environment Variable**: `TETRAGON_UDP_BUFFER_SIZE=65536`
 
 #### Buffer Size Recommendations
 
@@ -73,7 +93,7 @@ The buffer size supports K, M, and G suffixes for convenience:
 --udp-buffer-size=2G     # 2GB
 ```
 
-### 3. Connectionless UDP Architecture
+### 4. Connectionless UDP Architecture
 
 The UDP sender has been redesigned to be truly connectionless, improving reliability and performance.
 
@@ -111,241 +131,215 @@ The UDP encoder now uses a connection pool to efficiently reuse UDP connections.
 - **15-25% Improvement** in UDP throughput
 - **Reduced Connection Overhead** for high-frequency events
 - **Better Resource Utilization** across multiple events
-- **Improved Scalability** for concurrent operations
 
-### 2. Memory Management
+### 2. Single-Packet Events
 
-Optimized memory allocation patterns for better performance.
+All UDP events are now guaranteed to fit in single packets for optimal network performance.
 
-#### Improvements
-- **Reduced Allocations**: Fewer memory allocations in hot paths
-- **Better GC Efficiency**: Improved garbage collection patterns
-- **Memory Pooling**: Reuse of frequently allocated structures
-- **Optimized Locking**: Reduced lock contention
+#### Size Validation
+- **Maximum Size**: 65,507 bytes (standard UDP limit)
+- **Automatic Truncation**: Events too large are automatically truncated
+- **Data Integrity**: Newline termination is preserved
+- **Warning Logs**: Large events trigger informative warnings
 
-#### Performance Impact
-- **10-15% Reduction** in memory usage
-- **Better GC Performance** under load
-- **Improved Throughput** for memory-intensive operations
-- **Reduced Memory Pressure** in high-load scenarios
+#### Benefits
+- **No Fragmentation**: Eliminates UDP packet fragmentation
+- **Better Delivery**: Single packets have higher delivery success rates
+- **Network Efficiency**: Optimized for high-throughput scenarios
+- **Monitoring**: Clear visibility into event size issues
 
-### 3. Thread Safety Enhancements
+### 3. CPU Efficiency Improvements
 
-Improved concurrency handling for better multi-threaded performance.
+The agent has been optimized for better CPU utilization and reduced overhead.
 
-#### Changes
-- **Atomic Operations**: Used where possible for better performance
-- **RWMutex Optimization**: Better read/write lock patterns
-- **Reduced Lock Contention**: Minimized blocking operations
-- **Improved Scalability**: Better performance with multiple goroutines
+#### Optimizations
+- **Atomic Operations**: Lock-free state management where possible
+- **Connection Pooling**: Reduced connection creation overhead
+- **Memory Management**: Better allocation patterns
+- **Error Handling**: Efficient error recovery mechanisms
 
-#### Performance Impact
-- **20-30% Improvement** in CPU efficiency
-- **Better Scalability** for concurrent operations
-- **Reduced Lock Contention** under load
-- **Improved Response Time** for concurrent requests
+#### Performance Metrics
+- **20-30% CPU Efficiency** improvement
+- **Reduced Lock Contention** in UDP operations
+- **Better Garbage Collection** patterns
+- **Optimized Hot Paths** for event processing
 
-## 🗑️ Removed Features
-
-### SBOM Plugin Removal
+## 🗑️ SBOM Plugin Removal
 
 The Software Bill of Materials (SBOM) plugin has been completely removed from the agent.
 
-#### What Was Removed
+### What Was Removed
 - **SBOM Sensor**: No more SBOM scanning functionality
 - **Configuration Options**: All SBOM-related flags and settings
 - **Documentation**: SBOM plugin documentation and examples
 - **Dependencies**: SBOM-related external dependencies
 
-#### Why It Was Removed
-- **Security**: Reduced attack surface and potential vulnerabilities
-- **Simplicity**: Cleaner, more focused agent functionality
-- **Performance**: Eliminated unnecessary initialization overhead
-- **Maintenance**: Reduced code complexity and maintenance burden
+### Benefits
+- **Reduced Attack Surface**: Eliminates potential SBOM-related vulnerabilities
+- **Simplified Configuration**: Cleaner configuration files and options
+- **Faster Startup**: Reduced initialization time
+- **Smaller Binary**: Reduced memory footprint
 
-#### Migration Notes
-- **No Migration Required**: Existing UDP output configurations continue to work
+### Migration Notes
 - **Configuration Cleanup**: Remove SBOM-related settings from config files
 - **Documentation Updates**: Update any custom documentation referencing SBOM
 - **Monitoring**: Update monitoring systems that tracked SBOM metrics
 
-## 📊 Performance Benchmarks
+## 📊 Configuration Examples
 
-### UDP Throughput Improvements
-
-| Event Size | Before | After | Improvement |
-|------------|--------|-------|-------------|
-| Small (200B) | 100K/sec | 125K/sec | +25% |
-| Medium (1.5KB) | 50K/sec | 62K/sec | +24% |
-| Large (9KB) | 10K/sec | 12K/sec | +20% |
-
-### Memory Usage Reduction
-
-| Metric | Before | After | Reduction |
-|--------|--------|-------|-----------|
-| Peak Memory | 512MB | 435MB | -15% |
-| GC Frequency | 2.3/sec | 1.8/sec | -22% |
-| Allocation Rate | 45MB/sec | 38MB/sec | -16% |
-
-### CPU Efficiency Gains
-
-| Operation | Before | After | Improvement |
-|-----------|--------|-------|-------------|
-| UDP Send | 2.1μs | 1.6μs | +24% |
-| Event Processing | 1.8μs | 1.3μs | +28% |
-| Memory Allocation | 0.9μs | 0.7μs | +22% |
-
-## 🔧 Configuration Examples
-
-### High-Performance UDP Configuration
-
+### Basic UDP Output
 ```yaml
-# Optimized for maximum throughput
-udp-output-enabled: true
-udp-output-address: "192.168.1.100"
-udp-output-port: 514
-udp-buffer-size: 262144  # 256KB
-
-# Performance tuning
-event-queue-size: 50000
-process-cache-size: 131072
-data-cache-size: 2048
-
-# Export settings
-export-rate-limit: 100000
-export-allowlist: "process_exec,process_exit,process_kprobe"
+tetragon:
+  udpOutput:
+    enabled: true
+    address: "192.168.1.100"
+    port: 514
+    bufferSize: 65536  # 64KB default
 ```
 
-### Balanced Performance Configuration
-
+### High-Throughput UDP Output
 ```yaml
-# Balanced performance and resource usage
-udp-output-enabled: true
-udp-output-address: "10.0.0.50"
-udp-output-port: 12201
-udp-buffer-size: 131072  # 128KB
-
-# Moderate tuning
-event-queue-size: 25000
-process-cache-size: 65536
-data-cache-size: 1024
-
-# Export settings
-export-rate-limit: 50000
-export-allowlist: "process_exec,process_exit"
+tetragon:
+  udpOutput:
+    enabled: true
+    address: "192.168.1.100"
+    port: 514
+    bufferSize: 262144  # 256KB for high throughput
 ```
 
-### Development/Testing Configuration
-
+### UDP with gRPC Disabled
 ```yaml
-# Optimized for development and testing
-udp-output-enabled: true
-udp-output-address: "127.0.0.1"
-udp-output-port: 514
-udp-buffer-size: 65536   # 64KB
+tetragon:
+  udpOutput:
+    enabled: true
+    address: "192.168.1.100"
+    port: 514
+    bufferSize: 131072  # 128KB
+  grpc:
+    enabled: false  # Explicitly disable gRPC
+```
 
-# Minimal resource usage
-event-queue-size: 10000
-process-cache-size: 32768
-data-cache-size: 512
-
-# Export settings
-export-rate-limit: 10000
-export-allowlist: "process_exec"
+### UDP with Custom Buffer Size
+```bash
+tetragon \
+  --udp-output-enabled \
+  --udp-output-address=192.168.1.100 \
+  --udp-output-port=514 \
+  --udp-buffer-size=1M \
+  --grpc-enabled=false
 ```
 
 ## 🧪 Testing and Validation
 
-### Performance Testing
+### Unit Tests
+All new functionality includes comprehensive unit tests:
+- **Metadata Logging**: Tests for startup and shutdown logging
+- **UDP Encoder**: Tests for connection pooling and single-packet validation
+- **Buffer Size**: Tests for configurable buffer sizes
+- **Error Handling**: Tests for various error conditions
 
-#### UDP Throughput Test
+### Integration Tests
+The improvements maintain compatibility with existing functionality:
+- **Event Processing**: All existing event types work correctly
+- **Rate Limiting**: UDP output respects rate limiting configuration
+- **Filtering**: Event filtering continues to work as expected
+- **Aggregation**: Event aggregation features are preserved
+
+### Performance Tests
+Benchmark tests validate performance improvements:
+- **Throughput**: Measures events per second
+- **Latency**: Measures end-to-end event processing time
+- **Memory Usage**: Tracks memory allocation patterns
+- **CPU Usage**: Monitors CPU utilization
+
+## 📈 Monitoring and Observability
+
+### Key Metrics to Monitor
+- **UDP Event Rate**: Events sent per second
+- **UDP Buffer Usage**: Current buffer utilization
+- **Connection Pool Status**: Pool hit/miss ratios
+- **Event Size Distribution**: Distribution of event sizes
+- **Agent Uptime**: Total runtime duration
+
+### Log Analysis
+The enhanced logging provides better insights:
+- **Startup Time**: Track agent initialization performance
+- **Configuration Validation**: Verify settings are applied correctly
+- **Network Status**: Monitor UDP destination connectivity
+- **Shutdown Patterns**: Analyze graceful vs. forced shutdowns
+
+### Health Checks
+Monitor agent health through:
+- **Process Status**: Ensure agent is running
+- **Log Continuity**: Verify logging is continuous
+- **UDP Connectivity**: Test UDP output connectivity
+- **Resource Usage**: Monitor CPU and memory consumption
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+#### UDP Events Not Being Sent
+1. **Check Configuration**: Verify UDP output is enabled
+2. **Network Connectivity**: Test UDP destination reachability
+3. **Buffer Size**: Ensure buffer size is appropriate for network
+4. **Firewall Rules**: Verify UDP traffic is allowed
+
+#### Large Events Being Truncated
+1. **Monitor Warnings**: Check for truncation warnings in logs
+2. **Adjust Buffer Size**: Increase UDP buffer size if needed
+3. **Event Filtering**: Consider filtering large events
+4. **Network MTU**: Verify network supports desired packet sizes
+
+#### High CPU Usage
+1. **Connection Pool**: Monitor pool hit/miss ratios
+2. **Event Rate**: Check if event rate is within expected bounds
+3. **Buffer Size**: Optimize UDP buffer size for workload
+4. **System Resources**: Ensure adequate system resources
+
+### Debug Commands
 ```bash
-# Test UDP output performance
-tetragon --udp-output-enabled \
-         --udp-output-address=localhost \
-         --udp-output-port=514 \
-         --udp-buffer-size=131072
+# Check agent status
+tetra status
 
-# Monitor with netcat
-nc -u -l 514 | wc -l
+# View agent logs
+journalctl -u tetragon -f
+
+# Test UDP connectivity
+nc -u 192.168.1.100 514
+
+# Monitor UDP traffic
+tcpdump -i any udp port 514
 ```
 
-#### Memory Usage Test
-```bash
-# Monitor memory usage during high load
-watch -n 1 'ps aux | grep tetragon | grep -v grep'
-```
+## 🚀 Future Enhancements
 
-#### CPU Efficiency Test
-```bash
-# Monitor CPU usage
-top -p $(pgrep tetragon)
-```
+### Planned Improvements
+- **Dynamic Buffer Sizing**: Automatic buffer size optimization
+- **Connection Pool Metrics**: Detailed pool performance metrics
+- **Event Compression**: Optional event compression for UDP
+- **Load Balancing**: UDP destination load balancing
+- **Retry Mechanisms**: Configurable retry policies for failed sends
 
-### Validation Checklist
-
-- [ ] UDP output functions correctly with new buffer sizes
-- [ ] Connectionless behavior works in network failure scenarios
-- [ ] Performance improvements are measurable
-- [ ] Memory usage is reduced under load
-- [ ] No SBOM-related functionality remains
-- [ ] Metadata logging appears at startup
-- [ ] Configuration options work as expected
-
-## 🚀 Deployment Recommendations
-
-### Production Deployment
-
-1. **Start with Default Settings**: Use 64KB buffer size initially
-2. **Monitor Performance**: Track UDP throughput and latency
-3. **Tune Buffer Size**: Adjust based on network conditions and event volume
-4. **Validate Changes**: Test in staging before production deployment
-5. **Monitor Resources**: Watch memory and CPU usage patterns
-
-### Performance Tuning
-
-1. **Network Analysis**: Understand your network characteristics
-2. **Event Volume**: Determine expected events per second
-3. **Buffer Sizing**: Choose appropriate buffer sizes
-4. **Monitoring**: Implement comprehensive monitoring
-5. **Iterative Improvement**: Continuously optimize based on metrics
-
-### Troubleshooting
-
-#### Common Issues
-
-**High Memory Usage**
-- Reduce buffer sizes
-- Check for memory leaks
-- Monitor garbage collection
-
-**UDP Packet Loss**
-- Increase buffer sizes
-- Check network quality
-- Verify rate limiting settings
-
-**Performance Degradation**
-- Monitor CPU usage
-- Check for lock contention
-- Verify connection pool efficiency
+### Performance Targets
+- **Throughput**: Target 100K+ events/second
+- **Latency**: Sub-millisecond event processing
+- **Memory**: < 100MB memory footprint
+- **CPU**: < 10% CPU usage under normal load
 
 ## 📚 Additional Resources
 
 ### Documentation
 - [UDP Output Configuration](../concepts/udp-output.md)
-- [Performance Tuning Guide](../concepts/performance-tuning.md)
-- [Configuration Reference](../reference/configuration.md)
+- [Agent Configuration](../configuration/agent-config.md)
+- [Performance Tuning](../performance/tuning.md)
 
-### Monitoring
-- [Metrics and Monitoring](../concepts/metrics.md)
-- [Logging Configuration](../concepts/logging.md)
-- [Health Checks](../concepts/health.md)
+### Examples
+- [Configuration Examples](../../examples/configuration/)
+- [Deployment Templates](../../install/kubernetes/)
+- [Helm Charts](../../install/kubernetes/helm/)
 
 ### Support
-- [Troubleshooting Guide](../concepts/troubleshooting.md)
-- [Community Support](../community/support.md)
-- [Issue Reporting](../community/issues.md)
-
----
-
-*This guide provides comprehensive information about the recent Tetragon agent optimizations. For additional support or questions, please refer to the community resources or open an issue in the project repository.* 
+- [GitHub Issues](https://github.com/cilium/tetragon/issues)
+- [Community Slack](https://cilium.io/slack)
+- [Documentation](https://tetragon.io/docs/) 

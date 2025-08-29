@@ -60,6 +60,25 @@ func (e *UDPExporter) Start() error {
 	return exporterStartErr
 }
 
+// SendMetadataEvent sends a metadata event over UDP
+func (e *UDPExporter) SendMetadataEvent(hostname string, udpDestination string, udpBufferSize int) error {
+	metadataEvent := NewMetadataEvent(hostname, udpDestination, udpBufferSize)
+	event := metadataEvent.ToGetEventsResponse()
+
+	// Send the metadata event directly through the encoder
+	if err := e.encoder.Encode(event); err != nil {
+		logger.GetLogger().Warn("Failed to encode metadata event for UDP", logfields.Error, err)
+		return err
+	}
+
+	logger.GetLogger().Info("Metadata event sent over UDP",
+		"event", "agent_init",
+		"hostname", hostname,
+		"udp_destination", udpDestination)
+
+	return nil
+}
+
 // Send implements server.Listener.Send
 func (e *UDPExporter) Send(event *tetragon.GetEventsResponse) error {
 	e.mu.Lock()

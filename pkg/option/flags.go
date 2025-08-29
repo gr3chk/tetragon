@@ -279,8 +279,55 @@ func ReadAndSetFlags() error {
 	Config.ExposeStackAddresses = viper.GetBool(KeyExposeStackAddresses)
 
 	Config.CgroupRate = ParseCgroupRate(viper.GetString(KeyCgroupRate))
+
+	// Health server configuration
 	Config.HealthServerAddress = viper.GetString(KeyHealthServerAddress)
 	Config.HealthServerInterval = viper.GetInt(KeyHealthTimeInterval)
+
+	// If UDP output is enabled, automatically disable health server for minimal operation
+	if Config.UDPOutputEnabled && Config.HealthServerAddress == ":6789" {
+		Config.HealthServerAddress = ""
+		logger.GetLogger().Info("Health server disabled for UDP-only operation")
+	}
+
+	// If UDP output is enabled, also disable gops server for minimal operation
+	if Config.UDPOutputEnabled && Config.GopsAddr == "localhost:8118" {
+		Config.GopsAddr = ""
+		logger.GetLogger().Info("Gops server disabled for UDP-only operation")
+	}
+
+	// If UDP output is enabled, also disable metrics server for minimal operation
+	if Config.UDPOutputEnabled && Config.MetricsServer != "" {
+		Config.MetricsServer = ""
+		logger.GetLogger().Info("Metrics server disabled for UDP-only operation")
+	}
+
+	// If UDP output is enabled, also disable pprof server for minimal operation
+	if Config.UDPOutputEnabled && Config.PprofAddr != "" {
+		Config.PprofAddr = ""
+		logger.GetLogger().Info("Pprof server disabled for UDP-only operation")
+	}
+
+	// If UDP output is enabled, also disable Kubernetes API access for minimal operation
+	if Config.UDPOutputEnabled && Config.EnableK8s {
+		Config.EnableK8s = false
+		logger.GetLogger().Info("Kubernetes API access disabled for UDP-only operation")
+	}
+
+	// If UDP output is enabled, also disable policy filtering for minimal operation
+	if Config.UDPOutputEnabled && Config.EnablePolicyFilter {
+		Config.EnablePolicyFilter = false
+		Config.EnablePolicyFilterCgroupMap = false
+		Config.EnablePolicyFilterDebug = false
+		logger.GetLogger().Info("Policy filtering disabled for UDP-only operation")
+	}
+
+	// If UDP output is enabled, also disable pod info and tracing policy CRD for minimal operation
+	if Config.UDPOutputEnabled && (Config.EnablePodInfo || Config.EnableTracingPolicyCRD) {
+		Config.EnablePodInfo = false
+		Config.EnableTracingPolicyCRD = false
+		logger.GetLogger().Info("Pod info and tracing policy CRD disabled for UDP-only operation")
+	}
 
 	Config.BpfDir = viper.GetString(KeyBpfDir)
 
