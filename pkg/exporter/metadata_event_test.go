@@ -43,6 +43,22 @@ func TestNewMetadataEvent(t *testing.T) {
 	}
 }
 
+func TestMetadataEvent_ToJSON(t *testing.T) {
+	event := NewMetadataEvent("test-host", "127.0.0.1:514", 65536)
+
+	jsonData, err := event.ToJSON()
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonData)
+
+	// Verify JSON contains expected fields
+	jsonStr := string(jsonData)
+	assert.Contains(t, jsonStr, `"event":"agent_init"`)
+	assert.Contains(t, jsonStr, `"hostname":"test-host"`)
+	assert.Contains(t, jsonStr, `"udp_destination":"127.0.0.1:514"`)
+	assert.Contains(t, jsonStr, `"udp_buffer_size":65536`)
+	assert.Contains(t, jsonStr, `"uptime":"initialized at 0"`)
+}
+
 func TestMetadataEvent_ToGetEventsResponse(t *testing.T) {
 	event := NewMetadataEvent("test-host", "127.0.0.1:514", 65536)
 

@@ -31,6 +31,11 @@ All notable changes to this project will be documented in this file.
   - **Other services disabled** - Kubernetes API, policy filtering, CRI, pod info, tracing policy CRD
   - **Minimal attack surface** - Only necessary UDP export functionality active
 
+- **Agent Metadata Export**: Automatically exports initialization metadata as raw JSON over UDP on startup
+  - **Startup context** - Timestamp, version, hostname, kernel version, and configuration details
+  - **Raw JSON format** - Easily parseable by log aggregation systems and monitoring tools
+  - **Essential context** - Provides foundation for understanding all subsequent events
+
 - **Enhanced Shutdown Logging**: Added graceful shutdown logging with uptime tracking
   - Logs final status on agent shutdown
   - Tracks and reports agent uptime
@@ -62,6 +67,11 @@ All notable changes to this project will be documented in this file.
   - Deleted SBOM package files and documentation
   - Simplified agent configuration and reduced attack surface
 
+- **Syft Dependency**: Removed unused SBOM-related dependency
+  - Eliminated github.com/anchore/syft v1.32.0 from go.mod
+  - Cleaned up vendor directory to reduce bloat
+  - Simplified dependency tree and build process
+
 ### Technical Improvements
 - **Connection Management**: Implemented efficient connection pooling for UDP operations
 - **Memory Management**: Optimized memory allocation patterns and garbage collection
@@ -74,20 +84,26 @@ All notable changes to this project will be documented in this file.
 - `docs/agent_changelog/AGENT_OPTIMIZATION_GUIDE.md` - Comprehensive optimization guide
 - `docs/agent_changelog/IMPLEMENTATION_SUMMARY.md` - Technical implementation details
 - `docs/agent_changelog/UDP_MINIMAL_MODE.md` - Comprehensive guide to UDP minimal operation mode
+- `docs/agent_changelog/AGENT_METADATA_EXPORT.md` - Comprehensive guide to agent metadata export functionality
 
 ### Files Modified
-- `cmd/tetragon/main.go` - Added enhanced metadata logging, shutdown logging, and removed SBOM sensor loading
+- `cmd/tetragon/main.go` - Added enhanced metadata logging, shutdown logging, removed SBOM sensor loading, and added UDP metadata export
 - `pkg/option/config.go` - Added UDP buffer size configuration, removed SBOM options
 - `pkg/option/flags.go` - Added UDP buffer size flags, UDP minimal mode logic, removed SBOM flags
-- `pkg/encoder/udp_encoder.go` - Implemented connectionless architecture, connection pooling, and single-packet validation
+- `pkg/encoder/udp_encoder.go` - Implemented connectionless architecture, connection pooling, single-packet validation, and added WriteRaw method for metadata export
 - `pkg/encoder/udp_encoder_test.go` - Added comprehensive tests for new functionality
 - `pkg/encoder/udp_encoder_bench_test.go` - Updated benchmark tests for new API
+- `pkg/exporter/metadata_event.go` - Added metadata event structure and JSON export functionality
+- `pkg/exporter/udp_exporter.go` - Added metadata export capability to UDP exporter
+- `pkg/exporter/metadata_event_test.go` - Added comprehensive tests for metadata event functionality
 - `examples/configuration/tetragon.yaml` - Added UDP buffer size configuration
 - `examples/configuration/udp-output.yaml` - Added UDP buffer size examples
 - `examples/configuration/udp-output-with-grpc.yaml` - Added UDP buffer size examples
 - `examples/configuration/udp-output-high-throughput.yaml` - Added UDP buffer size examples
 - `examples/configuration/udp-output-filtered.yaml` - Added UDP buffer size examples
-- `docs/content/en/docs/concepts/udp-output.md` - Added buffer size, connectionless architecture, and minimal mode documentation
+- `docs/content/en/docs/concepts/udp-output.md` - Added buffer size, connectionless architecture, minimal mode, and metadata export documentation
+- `README.md` - Added metadata export information to UDP section
+- `go.mod` - Removed syft dependency and cleaned up vendor directory
 
 ### Files Deleted
 - `pkg/sbom/plugin.go` - SBOM plugin implementation

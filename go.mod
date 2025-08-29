@@ -5,7 +5,6 @@ go 1.25.0
 
 require (
 	github.com/alecthomas/kong v1.12.1
-	github.com/anchore/syft v1.32.0
 	github.com/cilium/ebpf v0.19.0
 	github.com/cilium/little-vm-helper v0.0.26
 	github.com/cilium/lumberjack/v2 v2.4.1

@@ -43,10 +43,20 @@ Metadata is collected using:
 
 ### Event Format
 
-The metadata is exported as a Tetragon `GetEventsResponse` with a `ProcessExec` event containing:
-- Binary: `tetragon_metadata`
-- Arguments: `agent_init`
-- PID: Current agent process ID
+The metadata is exported as **raw JSON** over UDP, not as a Tetragon event structure. This ensures the metadata is easily parseable by log aggregation systems and monitoring tools.
+
+The JSON format includes all the specified fields:
+- `@timestamp`: ISO 8601 UTC timestamp
+- `event`: "agent_init" identifier
+- `tetragon_version`: Current version
+- `build_commit` & `build_date`: Build information
+- `hostname`: System hostname
+- `os`: Operating system
+- `kernel_version`: Linux kernel version
+- `pid`: Process ID
+- `udp_destination`: UDP target (host:port)
+- `udp_buffer_size`: UDP buffer size
+- `uptime`: "initialized at 0"
 
 ### Error Handling
 

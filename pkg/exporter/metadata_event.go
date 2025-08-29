@@ -4,6 +4,7 @@
 package exporter
 
 import (
+	"encoding/json"
 	"os"
 	"time"
 
@@ -57,7 +58,13 @@ func NewMetadataEvent(hostname string, udpDestination string, udpBufferSize int)
 	}
 }
 
+// ToJSON converts the metadata event to JSON bytes
+func (m *MetadataEvent) ToJSON() ([]byte, error) {
+	return json.Marshal(m)
+}
+
 // ToGetEventsResponse converts the metadata event to a Tetragon GetEventsResponse
+// This is kept for compatibility but the actual export uses ToJSON
 func (m *MetadataEvent) ToGetEventsResponse() *tetragon.GetEventsResponse {
 	// Create a custom event that represents metadata
 	// We'll use a generic event structure since metadata doesn't fit standard Tetragon events

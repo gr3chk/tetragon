@@ -162,7 +162,24 @@ On startup, Tetragon automatically exports a metadata event containing:
 - **udp_buffer_size**: Configured UDP buffer size
 - **uptime**: Initialized at 0
 
-This metadata event is sent as the first UDP packet, providing essential context for all subsequent events.
+This metadata event is sent as **raw JSON** over UDP, providing essential context for all subsequent events. The event format is:
+
+```json
+{
+  "@timestamp": "2024-01-15T10:30:00Z",
+  "event": "agent_init",
+  "tetragon_version": "v1.1.0",
+  "build_commit": "a1b2c3d4e5f6",
+  "build_date": "2024-01-15T09:00:00Z",
+  "hostname": "tetragon-node-1",
+  "os": "linux",
+  "kernel_version": "6.14.0-28-generic",
+  "pid": 12345,
+  "udp_destination": "127.0.0.1:514",
+  "udp_buffer_size": 65536,
+  "uptime": "initialized at 0"
+}
+```
 
 ### Minimal Operation Mode
 

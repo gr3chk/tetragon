@@ -63,11 +63,17 @@ func (e *UDPExporter) Start() error {
 // SendMetadataEvent sends a metadata event over UDP
 func (e *UDPExporter) SendMetadataEvent(hostname string, udpDestination string, udpBufferSize int) error {
 	metadataEvent := NewMetadataEvent(hostname, udpDestination, udpBufferSize)
-	event := metadataEvent.ToGetEventsResponse()
 
-	// Send the metadata event directly through the encoder
-	if err := e.encoder.Encode(event); err != nil {
-		logger.GetLogger().Warn("Failed to encode metadata event for UDP", logfields.Error, err)
+	// Convert metadata to JSON
+	jsonData, err := metadataEvent.ToJSON()
+	if err != nil {
+		logger.GetLogger().Warn("Failed to marshal metadata event to JSON", logfields.Error, err)
+		return err
+	}
+
+	// Send the raw JSON metadata directly through the encoder
+	if err := e.encoder.WriteRaw(jsonData); err != nil {
+		logger.GetLogger().Warn("Failed to send metadata event over UDP", logfields.Error, err)
 		return err
 	}
 

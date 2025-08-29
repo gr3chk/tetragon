@@ -111,6 +111,56 @@ func (u *UDPEncoder) createUnboundUDPSocket() (*net.UDPConn, error) {
 	return conn, nil
 }
 
+// WriteRaw sends raw data over UDP
+func (u *UDPEncoder) WriteRaw(data []byte) error {
+	if atomic.LoadInt32(&u.closed) == 1 {
+		return fmt.Errorf("UDP encoder is closed")
+	}
+
+	// Add newline for proper log formatting
+	data = append(data, '\n')
+
+	// Ensure single-packet per event by checking size
+	if len(data) > MaxUDPSize {
+		logger.GetLogger().Warn("Data too large for single UDP packet, truncating",
+			"size", len(data),
+			"max_size", MaxUDPSize)
+		// Truncate to fit in single packet, preserving newline
+		data = data[:MaxUDPSize-1]
+		data = append(data, '\n')
+	}
+
+	// Get UDP socket from pool
+	connObj := u.connPool.Get()
+	if connObj == nil {
+		// Fallback: create new unbound UDP socket if pool is empty
+		conn, err := u.createUnboundUDPSocket()
+		if err != nil {
+			logger.GetLogger().Warn("Failed to create unbound UDP socket",
+				"address", u.addr.String(),
+				logfields.Error, err)
+			return err
+		}
+		defer conn.Close()
+		_, err = conn.WriteToUDP(data, u.addr)
+		return err
+	}
+
+	conn := connObj.(*net.UDPConn)
+	defer u.connPool.Put(conn)
+
+	// Send the data over UDP using WriteToUDP (no listener required)
+	_, err := conn.WriteToUDP(data, u.addr)
+	if err != nil {
+		logger.GetLogger().Warn("Failed to send data over UDP",
+			"address", u.addr.String(),
+			logfields.Error, err)
+		return err
+	}
+
+	return nil
+}
+
 // Encode implements EventEncoder.Encode
 func (u *UDPEncoder) Encode(v interface{}) error {
 	if atomic.LoadInt32(&u.closed) == 1 {
