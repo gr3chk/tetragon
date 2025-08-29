@@ -80,6 +80,7 @@ type config struct {
 	UDPOutputEnabled bool
 	UDPOutputAddress string
 	UDPOutputPort    int
+	UDPBufferSize    int
 
 	// gRPC options
 	GRPCEnabled bool
@@ -155,6 +156,9 @@ var (
 		// mainly used in the case of testing
 		EventCacheNumRetries: defaults.DefaultEventCacheNumRetries,
 		EventCacheRetryDelay: defaults.DefaultEventCacheRetryDelay,
+
+		// UDP output defaults
+		UDPBufferSize: 65536, // 64KB default buffer size
 	}
 )
 

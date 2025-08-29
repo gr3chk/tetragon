@@ -190,6 +190,21 @@ func deleteOldBpfDir(path string) {
 	log.Info("Removed bpf instance: " + path)
 }
 
+// logMetadata logs the initial metadata including version and hostname
+func logMetadata() {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Warn("Failed to get hostname", logfields.Error, err)
+		hostname = "unknown"
+	}
+
+	log.Info("Tetragon agent metadata",
+		"version", version.Version,
+		"hostname", hostname,
+		"platform", runtime.GOOS+"/"+runtime.GOARCH,
+		"go_version", runtime.Version())
+}
+
 func loadInitialSensor(ctx context.Context) error {
 	mgr := observer.GetSensorManager()
 	initialSensor := base.GetInitialSensor()
@@ -235,6 +250,9 @@ func tetragonExecuteCtx(ctx context.Context, cancel context.CancelFunc, ready fu
 
 	log.Info("Starting tetragon", "version", version.Version)
 	log.Info("config settings", "config", viper.AllSettings())
+
+	// Log metadata information
+	logMetadata()
 
 	// Create run dir early
 	os.MkdirAll(defaults.DefaultRunDir, 0755)
@@ -468,6 +486,7 @@ func tetragonExecuteCtx(ctx context.Context, cancel context.CancelFunc, ready fu
 	if err = loadInitialSensor(ctx); err != nil {
 		return err
 	}
+
 	observer.GetSensorManager().LogSensorsAndProbes(ctx)
 	defer func() {
 		observer.RemoveSensors(ctx)
@@ -753,7 +772,7 @@ func startUDPExporter(ctx context.Context, server *server.Server) error {
 	}
 
 	// Create UDP encoder
-	udpEncoder, err := encoder.NewUDPEncoder(option.Config.UDPOutputAddress, option.Config.UDPOutputPort)
+	udpEncoder, err := encoder.NewUDPEncoder(option.Config.UDPOutputAddress, option.Config.UDPOutputPort, option.Config.UDPBufferSize)
 	if err != nil {
 		return fmt.Errorf("failed to create UDP encoder: %w", err)
 	}

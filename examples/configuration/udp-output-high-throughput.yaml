@@ -7,6 +7,7 @@ udp-output-enabled: true
 # UDP destination settings
 udp-output-address: "192.168.1.100"
 udp-output-port: 514
+udp-buffer-size: 262144  # 256KB for high throughput
 
 # Disable gRPC for maximum performance
 grpc-enabled: false

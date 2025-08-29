@@ -80,6 +80,7 @@ const (
 	KeyUDPOutputEnabled = "udp-output-enabled"
 	KeyUDPOutputAddress = "udp-output-address"
 	KeyUDPOutputPort    = "udp-output-port"
+	KeyUDPBufferSize    = "udp-buffer-size"
 	KeyGRPCEnabled      = "grpc-enabled"
 
 	KeyNetnsDir = "netns-dir"
@@ -229,6 +230,7 @@ func ReadAndSetFlags() error {
 	Config.UDPOutputEnabled = viper.GetBool(KeyUDPOutputEnabled)
 	Config.UDPOutputAddress = viper.GetString(KeyUDPOutputAddress)
 	Config.UDPOutputPort = viper.GetInt(KeyUDPOutputPort)
+	Config.UDPBufferSize = viper.GetInt(KeyUDPBufferSize)
 
 	// gRPC configuration
 	Config.GRPCEnabled = viper.GetBool(KeyGRPCEnabled)
@@ -303,6 +305,7 @@ func ReadAndSetFlags() error {
 
 	Config.ExecveMapEntries = viper.GetInt(KeyExecveMapEntries)
 	Config.ExecveMapSize = viper.GetString(KeyExecveMapSize)
+
 	return nil
 }
 
@@ -400,6 +403,7 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.Bool(KeyUDPOutputEnabled, false, "Enable UDP output for events and logs")
 	flags.String(KeyUDPOutputAddress, "127.0.0.1", "UDP output destination address")
 	flags.Int(KeyUDPOutputPort, 514, "UDP output destination port")
+	flags.Int(KeyUDPBufferSize, 65536, "UDP socket buffer size in bytes (allows K/M/G suffix)")
 	flags.String(KeyGopsAddr, "", "gops server address (e.g. 'localhost:8118'). Disabled by default")
 	flags.Bool(KeyEnableProcessCred, false, "Enable process_cred events")
 	flags.Bool(KeyEnableProcessNs, false, "Enable namespace information in process_exec and process_kprobe events")

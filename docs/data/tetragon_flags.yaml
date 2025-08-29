@@ -89,6 +89,9 @@ options:
       default_value: "false"
       usage: |
         Enable namespace information in process_exec and process_kprobe events
+    - name: enable-sbom-plugin
+      default_value: "false"
+      usage: Enable SBOM plugin for software bill of materials scanning
     - name: enable-tracing-policy-crd
       default_value: "true"
       usage: |
@@ -158,6 +161,10 @@ options:
     - name: gops-address
       usage: |
         gops server address (e.g. 'localhost:8118'). Disabled by default
+    - name: grpc-enabled
+      default_value: "false"
+      usage: |
+        Enable gRPC server. Disabled by default when UDP output is enabled
     - name: health-server-address
       default_value: :6789
       usage: Health server address (e.g. ':6789')(use '' to disabled it)
@@ -222,6 +229,18 @@ options:
       default_value: "true"
       usage: |
         Release all pinned BPF programs and maps in Tetragon BPF directory. Enabled by default. Set to false to disable
+    - name: sbom-enable-docker
+      default_value: "true"
+      usage: Enable Docker container scanning in SBOM plugin
+    - name: sbom-enable-filesystem
+      default_value: "true"
+      usage: Enable filesystem scanning in SBOM plugin
+    - name: sbom-output-file
+      default_value: /var/log/tetragon/sbom.json
+      usage: Output file for SBOM scan results
+    - name: sbom-scan-interval
+      default_value: 1h0m0s
+      usage: Interval between SBOM scans
     - name: server-address
       default_value: localhost:54321
       usage: |
@@ -231,6 +250,15 @@ options:
     - name: tracing-policy-dir
       default_value: /etc/tetragon/tetragon.tp.d
       usage: Directory from where to load Tracing Policies
+    - name: udp-output-address
+      default_value: 127.0.0.1
+      usage: UDP output destination address
+    - name: udp-output-enabled
+      default_value: "false"
+      usage: Enable UDP output for events and logs
+    - name: udp-output-port
+      default_value: "514"
+      usage: UDP output destination port
     - name: username-metadata
       default_value: disabled
       usage: |

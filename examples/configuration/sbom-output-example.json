@@ -1,0 +1,240 @@
+{
+  "@timestamp": "2024-01-15T14:30:25.123Z",
+  "sources": {
+    "filesystem": {
+      "deb": [
+        {
+          "name": "openssl",
+          "version": "3.0.2-0ubuntu1.10",
+          "path": "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+          "cpe": "cpe:2.3:a:openssl:openssl:3.0.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "curl",
+          "version": "7.81.0-1ubuntu1.10",
+          "path": "/usr/bin/curl",
+          "cpe": "cpe:2.3:a:haxx:curl:7.81.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "wget",
+          "version": "1.21.2-2ubuntu1",
+          "path": "/usr/bin/wget",
+          "cpe": "cpe:2.3:a:gnu:wget:1.21.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "git",
+          "version": "1:2.34.1-1ubuntu1.9",
+          "path": "/usr/bin/git",
+          "cpe": "cpe:2.3:a:git:git:2.34.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "vim",
+          "version": "2:8.2.3995-1ubuntu2.11",
+          "path": "/usr/bin/vim",
+          "cpe": "cpe:2.3:a:vim:vim:8.2.3995:*:*:*:*:*:*:*"
+        }
+      ],
+      "pip": [
+        {
+          "name": "requests",
+          "version": "2.31.0",
+          "path": "/usr/local/lib/python3.9/site-packages/requests",
+          "cpe": "cpe:2.3:a:requests:requests:2.31.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "urllib3",
+          "version": "2.0.7",
+          "path": "/usr/local/lib/python3.9/site-packages/urllib3",
+          "cpe": "cpe:2.3:a:urllib3:urllib3:2.0.7:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "certifi",
+          "version": "2023.7.22",
+          "path": "/usr/local/lib/python3.9/site-packages/certifi",
+          "cpe": "cpe:2.3:a:certifi:certifi:2023.7.22:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "charset-normalizer",
+          "version": "3.2.0",
+          "path": "/usr/local/lib/python3.9/site-packages/charset_normalizer",
+          "cpe": "cpe:2.3:a:charset_normalizer:charset_normalizer:3.2.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "idna",
+          "version": "3.4",
+          "path": "/usr/local/lib/python3.9/site-packages/idna",
+          "cpe": "cpe:2.3:a:idna:idna:3.4:*:*:*:*:*:*:*"
+        }
+      ],
+      "npm": [
+        {
+          "name": "express",
+          "version": "4.18.2",
+          "path": "/usr/local/lib/node_modules/express",
+          "cpe": "cpe:2.3:a:express:express:4.18.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "body-parser",
+          "version": "1.20.2",
+          "path": "/usr/local/lib/node_modules/body-parser",
+          "cpe": "cpe:2.3:a:body_parser:body_parser:1.20.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "cors",
+          "version": "2.8.5",
+          "path": "/usr/local/lib/node_modules/cors",
+          "cpe": "cpe:2.3:a:cors:cors:2.8.5:*:*:*:*:*:*:*"
+        }
+      ],
+      "go": [
+        {
+          "name": "github.com/gin-gonic/gin",
+          "version": "v1.9.1",
+          "path": "/go/pkg/mod/github.com/gin-gonic/gin@v1.9.1",
+          "cpe": ""
+        },
+        {
+          "name": "github.com/golang/protobuf",
+          "version": "v1.5.3",
+          "path": "/go/pkg/mod/github.com/golang/protobuf@v1.5.3",
+          "cpe": ""
+        },
+        {
+          "name": "google.golang.org/grpc",
+          "version": "v1.58.0",
+          "path": "/go/pkg/mod/google.golang.org/grpc@v1.58.0",
+          "cpe": ""
+        }
+      ],
+      "java": [
+        {
+          "name": "spring-boot-starter-web",
+          "version": "3.1.5",
+          "path": "/usr/local/lib/spring-boot-starter-web-3.1.5.jar",
+          "cpe": "cpe:2.3:a:spring:spring_boot:3.1.5:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "jackson-databind",
+          "version": "2.15.2",
+          "path": "/usr/local/lib/jackson-databind-2.15.2.jar",
+          "cpe": "cpe:2.3:a:fasterxml:jackson:2.15.2:*:*:*:*:*:*:*"
+        }
+      ],
+      "apk": [],
+      "other": [
+        {
+          "name": "custom-binary",
+          "version": "1.0.0",
+          "path": "/usr/local/bin/custom-binary",
+          "cpe": ""
+        }
+      ]
+    },
+    "docker": {
+      "abc123def456789": {
+        "image": "nginx:latest",
+        "deb": [
+          {
+            "name": "nginx",
+            "version": "1.18.0-6ubuntu14.3",
+            "path": "/usr/sbin/nginx",
+            "cpe": "cpe:2.3:a:nginx:nginx:1.18.0:*:*:*:*:*:*:*"
+          },
+          {
+            "name": "libpcre3",
+            "version": "2:8.39-13ubuntu0.22.04.1",
+            "path": "/lib/x86_64-linux-gnu/libpcre.so.3",
+            "cpe": "cpe:2.3:a:libpcre:libpcre:8.39:*:*:*:*:*:*:*"
+          },
+          {
+            "name": "zlib1g",
+            "version": "1:1.2.11.dfsg-2ubuntu9.2",
+            "path": "/lib/x86_64-linux-gnu/libz.so.1",
+            "cpe": "cpe:2.3:a:zlib:zlib:1.2.11:*:*:*:*:*:*:*"
+          }
+        ],
+        "pip": [],
+        "npm": [],
+        "go": [],
+        "rpm": [],
+        "java": [],
+        "apk": [],
+        "other": []
+      },
+      "def456ghi789012": {
+        "image": "python:3.9-slim",
+        "deb": [
+          {
+            "name": "python3.9",
+            "version": "3.9.2-1",
+            "path": "/usr/bin/python3.9",
+            "cpe": "cpe:2.3:a:python:python:3.9.2:*:*:*:*:*:*:*"
+          },
+          {
+            "name": "libpython3.9",
+            "version": "3.9.2-1",
+            "path": "/usr/lib/x86_64-linux-gnu/libpython3.9.so.1.0",
+            "cpe": "cpe:2.3:a:python:python:3.9.2:*:*:*:*:*:*:*"
+          }
+        ],
+        "pip": [
+          {
+            "name": "flask",
+            "version": "2.3.3",
+            "path": "/usr/local/lib/python3.9/site-packages/flask",
+            "cpe": "cpe:2.3:a:flask:flask:2.3.3:*:*:*:*:*:*:*"
+          },
+          {
+            "name": "werkzeug",
+            "version": "2.3.7",
+            "path": "/usr/local/lib/python3.9/site-packages/werkzeug",
+            "cpe": "cpe:2.3:a:werkzeug:werkzeug:2.3.7:*:*:*:*:*:*:*"
+          }
+        ],
+        "npm": [],
+        "go": [],
+        "rpm": [],
+        "java": [],
+        "apk": [],
+        "other": []
+      },
+      "ghi789jkl012345": {
+        "image": "node:18-alpine",
+        "deb": [],
+        "pip": [],
+        "npm": [
+          {
+            "name": "express",
+            "version": "4.18.2",
+            "path": "/usr/local/lib/node_modules/express",
+            "cpe": "cpe:2.3:a:express:express:4.18.2:*:*:*:*:*:*:*"
+          },
+          {
+            "name": "body-parser",
+            "version": "1.20.2",
+            "path": "/usr/local/lib/node_modules/body-parser",
+            "cpe": "cpe:2.3:a:body_parser:body_parser:1.20.2:*:*:*:*:*:*:*"
+          }
+        ],
+        "go": [],
+        "rpm": [],
+        "java": [],
+        "apk": [
+          {
+            "name": "nodejs",
+            "version": "18.17.1-r0",
+            "path": "/usr/bin/node",
+            "cpe": "cpe:2.3:a:nodejs:nodejs:18.17.1:*:*:*:*:*:*:*"
+          },
+          {
+            "name": "npm",
+            "version": "9.6.7-r0",
+            "path": "/usr/bin/npm",
+            "cpe": "cpe:2.3:a:npm:npm:9.6.7:*:*:*:*:*:*:*"
+          }
+        ],
+        "other": []
+      }
+    }
+  }
+} 

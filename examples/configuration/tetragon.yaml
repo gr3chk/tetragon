@@ -50,4 +50,5 @@ server-address: localhost:54321
 udp-output-enabled: false
 udp-output-address: 127.0.0.1
 udp-output-port: 514
+udp-buffer-size: 65536  # 64KB default buffer size
 verbose: 0

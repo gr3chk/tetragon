@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 
 	"github.com/cilium/tetragon/api/v1/tetragon"
 	"github.com/cilium/tetragon/pkg/logger"
@@ -17,40 +18,54 @@ import (
 
 // UDPEncoder implements EventEncoder interface for sending events over UDP
 type UDPEncoder struct {
-	conn     *net.UDPConn
 	addr     *net.UDPAddr
-	mu       sync.Mutex
-	closed   bool
+	mu       sync.RWMutex
+	closed   int32
 	jsonOpts protojson.MarshalOptions
+	connPool sync.Pool
+	poolSize int
 }
 
 // NewUDPEncoder creates a new UDP encoder that sends events to the specified address and port
-func NewUDPEncoder(address string, port int) (*UDPEncoder, error) {
+func NewUDPEncoder(address string, port int, bufferSize int) (*UDPEncoder, error) {
 	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", address, port))
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve UDP address %s:%d: %w", address, port, err)
 	}
 
-	conn, err := net.DialUDP("udp", nil, addr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create UDP connection to %s:%d: %w", address, port, err)
-	}
-
-	return &UDPEncoder{
-		conn: conn,
-		addr: addr,
+	encoder := &UDPEncoder{
+		addr:     addr,
+		poolSize: 10, // Connection pool size
 		jsonOpts: protojson.MarshalOptions{
 			UseProtoNames: true, // Maintain backward compatibility with snake_case
 		},
-	}, nil
+	}
+
+	// Initialize connection pool with buffer size configuration
+	encoder.connPool.New = func() interface{} {
+		conn, err := net.DialUDP("udp", nil, addr)
+		if err != nil {
+			return nil
+		}
+
+		// Set socket buffer size if specified
+		if bufferSize > 0 {
+			if err := conn.SetWriteBuffer(bufferSize); err != nil {
+				logger.GetLogger().Warn("Failed to set UDP write buffer size",
+					"size", bufferSize,
+					logfields.Error, err)
+			}
+		}
+
+		return conn
+	}
+
+	return encoder, nil
 }
 
 // Encode implements EventEncoder.Encode
 func (u *UDPEncoder) Encode(v interface{}) error {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	if u.closed {
+	if atomic.LoadInt32(&u.closed) == 1 {
 		return fmt.Errorf("UDP encoder is closed")
 	}
 
@@ -69,8 +84,27 @@ func (u *UDPEncoder) Encode(v interface{}) error {
 	// Add newline for proper log formatting
 	data = append(data, '\n')
 
+	// Get connection from pool
+	connObj := u.connPool.Get()
+	if connObj == nil {
+		// Fallback to creating new connection if pool is empty
+		conn, err := net.DialUDP("udp", nil, u.addr)
+		if err != nil {
+			logger.GetLogger().Warn("Failed to create UDP connection",
+				"address", u.addr.String(),
+				logfields.Error, err)
+			return err
+		}
+		defer conn.Close()
+		_, err = conn.Write(data)
+		return err
+	}
+
+	conn := connObj.(*net.UDPConn)
+	defer u.connPool.Put(conn)
+
 	// Send the data over UDP
-	_, err = u.conn.Write(data)
+	_, err = conn.Write(data)
 	if err != nil {
 		logger.GetLogger().Warn("Failed to send event over UDP",
 			"address", u.addr.String(),
@@ -81,29 +115,37 @@ func (u *UDPEncoder) Encode(v interface{}) error {
 	return nil
 }
 
-// Close closes the UDP connection
+// Close closes the UDP encoder
 func (u *UDPEncoder) Close() error {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	if u.closed {
-		return nil
-	}
-
-	u.closed = true
-	return u.conn.Close()
+	atomic.StoreInt32(&u.closed, 1)
+	return nil
 }
 
 // Write implements io.Writer interface for compatibility with existing exporter
 func (u *UDPEncoder) Write(p []byte) (n int, err error) {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	if u.closed {
+	if atomic.LoadInt32(&u.closed) == 1 {
 		return 0, fmt.Errorf("UDP encoder is closed")
 	}
 
-	return u.conn.Write(p)
+	// Get connection from pool
+	connObj := u.connPool.Get()
+	if connObj == nil {
+		// Fallback to creating new connection if pool is empty
+		conn, err := net.DialUDP("udp", nil, u.addr)
+		if err != nil {
+			logger.GetLogger().Warn("Failed to create UDP connection",
+				"address", u.addr.String(),
+				logfields.Error, err)
+			return 0, err
+		}
+		defer conn.Close()
+		return conn.Write(p)
+	}
+
+	conn := connObj.(*net.UDPConn)
+	defer u.connPool.Put(conn)
+
+	return conn.Write(p)
 }
 
 // GetRemoteAddr returns the remote UDP address

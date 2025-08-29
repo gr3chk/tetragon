@@ -7,6 +7,7 @@ udp-output-enabled: true
 # UDP destination settings
 udp-output-address: "10.0.0.50"
 udp-output-port: 12201
+udp-buffer-size: 131072  # 128KB for filtered output
 
 # Disable gRPC
 grpc-enabled: false
