@@ -858,13 +858,8 @@ func startUDPExporter(ctx context.Context, server *server.Server) error {
 	}
 
 	// Send metadata event over UDP after exporter is started
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
-	}
-
 	udpDestination := fmt.Sprintf("%s:%d", option.Config.UDPOutputAddress, option.Config.UDPOutputPort)
-	if err := udpExporter.SendMetadataEvent(hostname, udpDestination, option.Config.UDPBufferSize); err != nil {
+	if err := udpExporter.SendMetadataEvent(udpDestination, option.Config.UDPBufferSize); err != nil {
 		log.Warn("Failed to send metadata event over UDP", logfields.Error, err)
 		// Don't fail startup if metadata export fails
 	}

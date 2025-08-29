@@ -27,6 +27,10 @@ type UDPExporter struct {
 	rateLimiter *ratelimit.RateLimiter
 	mu          sync.Mutex
 	closed      bool
+
+	// Cached metadata for performance optimization
+	cachedMetadata []byte
+	metadataOnce   sync.Once
 }
 
 // NewUDPExporter creates a new UDP exporter
@@ -60,18 +64,46 @@ func (e *UDPExporter) Start() error {
 	return exporterStartErr
 }
 
-// SendMetadataEvent sends a metadata event over UDP
-func (e *UDPExporter) SendMetadataEvent(hostname string, udpDestination string, udpBufferSize int) error {
-	metadataEvent := NewMetadataEvent(hostname, udpDestination, udpBufferSize)
+// initCachedMetadata initializes the cached metadata once for performance optimization
+func (e *UDPExporter) initCachedMetadata(udpDestination string, udpBufferSize int) {
+	e.metadataOnce.Do(func() {
+		metadataEvent := NewMetadataEvent(udpDestination, udpBufferSize)
+		if jsonData, err := metadataEvent.ToJSON(); err == nil {
+			e.cachedMetadata = jsonData
+		} else {
+			logger.GetLogger().Warn("Failed to cache metadata event", logfields.Error, err)
+		}
+	})
+}
 
-	// Convert metadata to JSON
+// SendMetadataEvent sends a metadata event over UDP
+func (e *UDPExporter) SendMetadataEvent(udpDestination string, udpBufferSize int) error {
+	// Initialize cached metadata once
+	e.initCachedMetadata(udpDestination, udpBufferSize)
+
+	// Use cached metadata if available
+	if e.cachedMetadata != nil {
+		if err := e.encoder.WriteRaw(e.cachedMetadata); err != nil {
+			logger.GetLogger().Warn("Failed to send cached metadata event over UDP", logfields.Error, err)
+			return err
+		}
+
+		logger.GetLogger().Info("Cached metadata event sent over UDP",
+			"event", "agent_init",
+			"hostname", getCachedHostname(),
+			"udp_destination", udpDestination)
+
+		return nil
+	}
+
+	// Fallback to dynamic creation if caching failed
+	metadataEvent := NewMetadataEvent(udpDestination, udpBufferSize)
 	jsonData, err := metadataEvent.ToJSON()
 	if err != nil {
 		logger.GetLogger().Warn("Failed to marshal metadata event to JSON", logfields.Error, err)
 		return err
 	}
 
-	// Send the raw JSON metadata directly through the encoder
 	if err := e.encoder.WriteRaw(jsonData); err != nil {
 		logger.GetLogger().Warn("Failed to send metadata event over UDP", logfields.Error, err)
 		return err
@@ -79,7 +111,7 @@ func (e *UDPExporter) SendMetadataEvent(hostname string, udpDestination string, 
 
 	logger.GetLogger().Info("Metadata event sent over UDP",
 		"event", "agent_init",
-		"hostname", hostname,
+		"hostname", getCachedHostname(),
 		"udp_destination", udpDestination)
 
 	return nil

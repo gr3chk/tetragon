@@ -12,15 +12,13 @@ import (
 )
 
 func TestNewMetadataEvent(t *testing.T) {
-	hostname := "test-host"
 	udpDestination := "127.0.0.1:514"
 	udpBufferSize := 65536
 
-	event := NewMetadataEvent(hostname, udpDestination, udpBufferSize)
+	event := NewMetadataEvent(udpDestination, udpBufferSize)
 
 	// Test basic fields
 	assert.Equal(t, "agent_init", event.Event)
-	assert.Equal(t, hostname, event.Hostname)
 	assert.Equal(t, udpDestination, event.UDPDestination)
 	assert.Equal(t, udpBufferSize, event.UDPBufferSize)
 	assert.Equal(t, "initialized at 0", event.Uptime)
@@ -44,7 +42,7 @@ func TestNewMetadataEvent(t *testing.T) {
 }
 
 func TestMetadataEvent_ToJSON(t *testing.T) {
-	event := NewMetadataEvent("test-host", "127.0.0.1:514", 65536)
+	event := NewMetadataEvent("127.0.0.1:514", 65536)
 
 	jsonData, err := event.ToJSON()
 	require.NoError(t, err)
@@ -53,14 +51,13 @@ func TestMetadataEvent_ToJSON(t *testing.T) {
 	// Verify JSON contains expected fields
 	jsonStr := string(jsonData)
 	assert.Contains(t, jsonStr, `"event":"agent_init"`)
-	assert.Contains(t, jsonStr, `"hostname":"test-host"`)
 	assert.Contains(t, jsonStr, `"udp_destination":"127.0.0.1:514"`)
 	assert.Contains(t, jsonStr, `"udp_buffer_size":65536`)
 	assert.Contains(t, jsonStr, `"uptime":"initialized at 0"`)
 }
 
 func TestMetadataEvent_ToGetEventsResponse(t *testing.T) {
-	event := NewMetadataEvent("test-host", "127.0.0.1:514", 65536)
+	event := NewMetadataEvent("127.0.0.1:514", 65536)
 
 	response := event.ToGetEventsResponse()
 
@@ -75,7 +72,7 @@ func TestMetadataEvent_ToGetEventsResponse(t *testing.T) {
 }
 
 func TestMetadataEvent_JSONTags(t *testing.T) {
-	event := NewMetadataEvent("test-host", "127.0.0.1:514", 65536)
+	event := NewMetadataEvent("127.0.0.1:514", 65536)
 
 	// Test that JSON tags are properly set
 	// This ensures the event can be properly serialized
@@ -124,4 +121,21 @@ func getJSONTag(event *MetadataEvent, fieldName string) string {
 	default:
 		return ""
 	}
+}
+
+func TestMetadataEvent_Optimizations(t *testing.T) {
+	// Test that string constants are used
+	assert.Equal(t, EventAgentInit, "agent_init")
+	assert.Equal(t, OSLinux, "linux")
+	assert.Equal(t, UptimeInit, "initialized at 0")
+
+	// Test that hostname caching works
+	hostname1 := getCachedHostname()
+	hostname2 := getCachedHostname()
+	assert.Equal(t, hostname1, hostname2, "Hostname should be cached and consistent")
+
+	// Test that multiple metadata events use the same hostname
+	event1 := NewMetadataEvent("127.0.0.1:514", 65536)
+	event2 := NewMetadataEvent("127.0.0.1:514", 65536)
+	assert.Equal(t, event1.Hostname, event2.Hostname, "Hostname should be consistent across events")
 }

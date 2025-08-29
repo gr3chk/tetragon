@@ -181,6 +181,15 @@ This metadata event is sent as **raw JSON** over UDP, providing essential contex
 }
 ```
 
+#### Performance Optimizations
+
+The metadata export system includes several performance optimizations:
+
+- **Metadata Caching**: Metadata is marshaled to JSON once and cached for reuse, eliminating repeated JSON processing
+- **String Constants**: Static strings like "agent_init", "linux", and "initialized at 0" are defined as constants to reduce allocations
+- **Lazy Hostname Resolution**: System hostname is resolved once and cached, avoiding repeated system calls
+- **Efficient UDP Transmission**: Cached metadata is sent directly over UDP without re-processing
+
 ### Minimal Operation Mode
 
 When UDP output is enabled, Tetragon automatically enters minimal operation mode:

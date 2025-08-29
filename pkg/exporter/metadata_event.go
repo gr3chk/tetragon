@@ -6,6 +6,7 @@ package exporter
 import (
 	"encoding/json"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/cilium/tetragon/api/v1/tetragon"
@@ -13,6 +14,31 @@ import (
 	"golang.org/x/sys/unix"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
+
+// String constants for metadata events to reduce allocations
+const (
+	EventAgentInit = "agent_init"
+	OSLinux        = "linux"
+	UptimeInit     = "initialized at 0"
+)
+
+// Global cached hostname to avoid repeated system calls
+var (
+	cachedHostname string
+	hostnameOnce   sync.Once
+)
+
+// getCachedHostname returns the cached hostname, resolving it once if needed
+func getCachedHostname() string {
+	hostnameOnce.Do(func() {
+		if hostname, err := os.Hostname(); err == nil {
+			cachedHostname = hostname
+		} else {
+			cachedHostname = "unknown"
+		}
+	})
+	return cachedHostname
+}
 
 // MetadataEvent represents the agent initialization metadata
 type MetadataEvent struct {
@@ -31,7 +57,7 @@ type MetadataEvent struct {
 }
 
 // NewMetadataEvent creates a new metadata event for agent initialization
-func NewMetadataEvent(hostname string, udpDestination string, udpBufferSize int) *MetadataEvent {
+func NewMetadataEvent(udpDestination string, udpBufferSize int) *MetadataEvent {
 	// Get build information
 	buildInfo := version.ReadBuildInfo()
 
@@ -44,17 +70,17 @@ func NewMetadataEvent(hostname string, udpDestination string, udpBufferSize int)
 
 	return &MetadataEvent{
 		Timestamp:       time.Now().UTC(),
-		Event:           "agent_init",
+		Event:           EventAgentInit,
 		TetragonVersion: version.Version,
 		BuildCommit:     buildInfo.Commit,
 		BuildDate:       buildInfo.Time,
-		Hostname:        hostname,
-		OS:              "linux", // We'll make this configurable later
+		Hostname:        getCachedHostname(),
+		OS:              OSLinux,
 		KernelVersion:   kernelVersion,
 		PID:             os.Getpid(),
 		UDPDestination:  udpDestination,
 		UDPBufferSize:   udpBufferSize,
-		Uptime:          "initialized at 0",
+		Uptime:          UptimeInit,
 	}
 }
 

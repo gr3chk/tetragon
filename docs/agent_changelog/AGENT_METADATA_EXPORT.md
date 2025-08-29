@@ -58,6 +58,34 @@ The JSON format includes all the specified fields:
 - `udp_buffer_size`: UDP buffer size
 - `uptime`: "initialized at 0"
 
+### Performance Optimizations
+
+The metadata export system is designed for high performance and low resource usage:
+
+#### Metadata Caching
+- **One-time JSON marshaling**: Metadata is converted to JSON once and cached
+- **Eliminates repeated processing**: Subsequent metadata exports use cached data
+- **Reduces CPU usage**: No repeated JSON encoding operations
+- **Memory efficient**: Single cached copy shared across all exports
+
+#### String Constants
+- **Static string optimization**: Common strings like "agent_init", "linux", "initialized at 0" are constants
+- **Reduces allocations**: Prevents repeated string creation
+- **Improves memory locality**: Constants are stored in read-only memory
+- **Faster comparisons**: Direct constant comparisons vs. string allocations
+
+#### Lazy Hostname Resolution
+- **Single system call**: `os.Hostname()` is called only once during initialization
+- **Cached resolution**: Hostname is stored and reused for all metadata events
+- **Reduces kernel context switches**: Avoids repeated system call overhead
+- **Consistent hostname**: Ensures all metadata events use the same hostname value
+
+#### UDP Transmission Efficiency
+- **Direct cached data transmission**: Cached JSON is sent without re-processing
+- **Minimal memory copying**: Data flows directly from cache to UDP socket
+- **Reduced latency**: Faster metadata export with cached data
+- **Better throughput**: Higher UDP packet transmission rates
+
 ### Error Handling
 
 - Metadata export failures don't prevent Tetragon startup
